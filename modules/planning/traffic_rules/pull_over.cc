@@ -47,7 +47,7 @@ uint32_t PullOver::failure_count_ = 0;
 PointENU PullOver::stop_point_;
 PointENU PullOver::inlane_stop_point_;
 
-PullOver::PullOver(const TrafficRuleConfig& config) : TrafficRule(config) {}
+PullOver::PullOver(const TrafficRuleConfig& config) : TrafficRule(config) {}//no change 
 
 Status PullOver::ApplyRule(Frame* const frame,
                            ReferenceLineInfo* const reference_line_info) {
