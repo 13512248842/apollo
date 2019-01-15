@@ -61,7 +61,7 @@ void FrontVehicle::MakeDecisions(Frame* frame,
                                  ReferenceLineInfo* const reference_line_info) {
   CHECK_NOTNULL(frame);
   CHECK_NOTNULL(reference_line_info);
-
+  AINFO<<"Test";//MODIFY
   MakeSidePassDecision(reference_line_info);
 
   MakeStopDecision(reference_line_info);
@@ -77,21 +77,21 @@ bool FrontVehicle::MakeSidePassDecision(
   if (!config_.front_vehicle().enable_side_pass()) {
     return true;
   }
-
+  AINFO<<"config";//MODIFY
   if (FLAGS_use_navigation_mode) {
     // no SIDE_PASS in navigation mode
     return true;
   }
-
+  AINFO<<"navigation";//MODIFY
   if (!reference_line_info->Lanes().IsOnSegment()) {
     // The lane keeping reference line
     return true;
   }
-
+  AINFO<<"is on segment";//MODIFY
   if (!ProcessSidePass(reference_line_info)) {
     return false;
   }
-
+  AINFO<<"process sidepass";//MODIFY
   auto* sidepass_status = GetPlanningStatus()->mutable_side_pass();
   if (sidepass_status->has_status() &&
       sidepass_status->status() == SidePassStatus::SIDEPASS) {
@@ -115,8 +115,8 @@ bool FrontVehicle::ProcessSidePass(
 
   // find obstacle being blocked, to process SIDEPASS
   std::string passable_obstacle_id = FindPassableObstacle(reference_line_info);
-
   auto* sidepass_status = GetPlanningStatus()->mutable_side_pass();
+  AINFO<<"FIRST SIDE_PASS STATUS:"<<sidepass_status;//modify
   if (!sidepass_status->has_status()) {
     sidepass_status->set_status(SidePassStatus::UNKNOWN);
   }
@@ -134,6 +134,7 @@ bool FrontVehicle::ProcessSidePass(
       if (!passable_obstacle_id.empty() &&
           adc_planning_point.v() < kAdcStopSpeedThreshold) {
         sidepass_status->set_status(SidePassStatus::WAIT);
+        AINFO<<"IS WAIT?"<<SidePassStatus_Status_Name(status);//modify
         sidepass_status->set_wait_start_time(Clock::NowInSeconds());
       }
       break;
@@ -151,25 +152,28 @@ bool FrontVehicle::ProcessSidePass(
         ADEBUG << "wait_start_time[" << wait_start_time << "] wait_time["
                << wait_time << "]";
 
+            
         if (wait_time > config_.front_vehicle().side_pass_wait_time()) {
           // calculate if the left/right lane exist
           std::vector<hdmap::LaneInfoConstPtr> lanes;
           const double adc_s =
               (adc_sl_boundary.start_s() + adc_sl_boundary.end_s()) / 2.0;
           reference_line.GetLaneFromS(adc_s, &lanes);
+         AINFO << "The lane's size is [" << lanes.size()<< "]";//MODIFY
           if (lanes.empty()) {
             AWARN << "No valid lane found at s[" << adc_s << "]";
             return false;
           }
-
+         
+//modify >=2
           bool enter_sidepass_mode = false;
           ObjectSidePass::Type side = ObjectSidePass::LEFT;
-          if (lanes.size() >= 2) {
+          if (lanes.size() <=1) {
             // currently do not sidepass when lanes > 2 (usually at junctions).
           } else {
             sidepass_status->set_status(SidePassStatus::DRIVE);
             sidepass_status->clear_wait_start_time();
-
+            AINFO<<"SUCESS";//MODIFY
             auto& lane = lanes.front()->lane();
             if (lane.left_neighbor_forward_lane_id_size() > 0) {
               enter_sidepass_mode = true;
@@ -364,7 +368,7 @@ void FrontVehicle::MakeStopDecision(ReferenceLineInfo* reference_line_info) {
 
       // build stop decision
       double stop_distance =
-          path_obstacle->MinRadiusStopDistance(vehicle_param);
+          path_obstacle->MinRadiusStopDistance(vehicle_param) ;
       const double stop_s = obstacle_sl.start_s() - stop_distance;
       auto stop_point = reference_line.GetReferencePoint(stop_s);
       double stop_heading = reference_line.GetReferencePoint(stop_s).heading();
