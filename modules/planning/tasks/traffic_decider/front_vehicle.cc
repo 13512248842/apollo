@@ -168,7 +168,7 @@ bool FrontVehicle::ProcessSidePass(
 //modify >=2
           bool enter_sidepass_mode = false;
           ObjectSidePass::Type side = ObjectSidePass::LEFT;
-          if (lanes.size() <=1) {
+          if (lanes.size() >=2) {
             // currently do not sidepass when lanes > 2 (usually at junctions).
           } else {
             sidepass_status->set_status(SidePassStatus::DRIVE);
