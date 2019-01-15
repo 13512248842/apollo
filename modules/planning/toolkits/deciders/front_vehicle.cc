@@ -80,6 +80,11 @@ bool FrontVehicle::MakeSidePassDecision(
     return true;
   }
 
+  if (FLAGS_use_navigation_mode) {
+    // no SIDE_PASS in navigation mode
+    return true;//新增
+  }   
+    
   if (!reference_line_info->Lanes().IsOnSegment()) {
     // The lane keeping reference line
     return true;
@@ -143,8 +148,8 @@ bool FrontVehicle::ProcessSidePass(
         sidepass_status->set_status(SidePassStatus::DRIVE);
         sidepass_status->clear_wait_start_time();
       } else {
-        const double wait_start_time = sidepass_status->wait_start_time();
-        const double wait_time = Clock::NowInSeconds() - wait_start_time;
+        double wait_start_time = sidepass_status->wait_start_time();
+        double wait_time = Clock::NowInSeconds() - wait_start_time;//删去const
         ADEBUG << "wait_start_time[" << wait_start_time << "] wait_time["
                << wait_time << "]";
 
@@ -161,7 +166,7 @@ bool FrontVehicle::ProcessSidePass(
 
           bool enter_sidepass_mode = false;
           ObjectSidePass::Type side = ObjectSidePass::LEFT;
-          if (lanes.size() >= 2) {
+          if (lanes.size() <= 1) {//>=2改为<=1
             // currently do not sidepass when lanes > 2 (usually at junctions).
           } else {
             sidepass_status->set_status(SidePassStatus::DRIVE);
@@ -284,8 +289,8 @@ std::string FrontVehicle::FindPassableObstacle(
         continue;
       }
 
-      const double delta_s = other_obstacle->PerceptionSLBoundary().start_s() -
-                             obstacle_sl.end_s();
+      double delta_s = other_obstacle->PerceptionSLBoundary().start_s() -
+                             obstacle_sl.end_s();//删去const
       if (delta_s < 0.0 || delta_s > side_pass_s_threshold) {
         continue;
       } else {
@@ -324,19 +329,19 @@ void FrontVehicle::MakeStopDecision(ReferenceLineInfo* reference_line_info) {
       continue;
     }
 
-    bool is_on_road = reference_line_info->reference_line().HasOverlap(
-        path_obstacle->obstacle()->PerceptionBoundingBox());
-    if (!is_on_road) {
+   // bool is_on_road = reference_line_info->reference_line().HasOverlap(
+   //     path_obstacle->obstacle()->PerceptionBoundingBox());
+   // if (!is_on_road) {
       // skip obstacles not on reference line
-      ADEBUG << "obstacle_id[" << obstacle_id << "] type[" << obstacle_type_name
-             << "] NOT_ON_ROAD. SKIP";
-      continue;
-    }
+   //   ADEBUG << "obstacle_id[" << obstacle_id << "] type[" << obstacle_type_name
+   //          << "] NOT_ON_ROAD. SKIP";
+   //   continue;
+   // }
 
-    const auto& vehicle_sl = reference_line_info->VehicleSlBoundary();
+  //  const auto& vehicle_sl = reference_line_info->VehicleSlBoundary();
     const auto& obstacle_sl = path_obstacle->PerceptionSLBoundary();
-    if (obstacle_sl.end_s() <= adc_sl.start_s() ||
-        obstacle_sl.end_s() <= vehicle_sl.start_s()) {
+    if (obstacle_sl.end_s() <= adc_sl.start_s())// ||
+      //  obstacle_sl.end_s() <= vehicle_sl.start_s()) {
       // skip backside vehicles
       ADEBUG << "obstacle_id[" << obstacle_id << "] type[" << obstacle_type_name
              << "] behind ADC. SKIP";
@@ -351,21 +356,21 @@ void FrontVehicle::MakeStopDecision(ReferenceLineInfo* reference_line_info) {
     }
 
     // use min width to take care splitting-lane scenario
-    double start_s_left_width = 0.0;
-    double start_s_right_width = 0.0;
-    reference_line.GetLaneWidth(obstacle_sl.start_s(), &start_s_left_width,
-                                &start_s_right_width);
-    double end_s_left_width = 0.0;
-    double end_s_right_width = 0.0;
-    reference_line.GetLaneWidth(obstacle_sl.end_s(), &end_s_left_width,
-                                &end_s_right_width);
+    double left_width = 0.0;
+    double right_width = 0.0;
+    reference_line.GetLaneWidth(obstacle_sl.start_s(), &left_width,
+                                &right_width);
+    //double end_s_left_width = 0.0;
+    //double end_s_right_width = 0.0;
+    //reference_line.GetLaneWidth(obstacle_sl.end_s(), &end_s_left_width,
+                                //&end_s_right_width);
 
-    const double left_width = std::min(start_s_left_width, end_s_left_width);
-    const double left_driving_width = left_width - obstacle_sl.end_l() -
+    //const double left_width = std::min(start_s_left_width, end_s_left_width);
+    double left_driving_width = left_width - obstacle_sl.end_l() -
                                       config_.front_vehicle().nudge_l_buffer();
 
-    const double right_width = std::min(start_s_right_width, end_s_right_width);
-    const double right_driving_width = right_width + obstacle_sl.start_l() -
+    //const double right_width = std::min(start_s_right_width, end_s_right_width);
+    double right_driving_width = right_width + obstacle_sl.start_l() -
                                        config_.front_vehicle().nudge_l_buffer();
 
     ADEBUG << "obstacle_id[" << obstacle_id << "] type[" << obstacle_type_name
@@ -379,11 +384,11 @@ void FrontVehicle::MakeStopDecision(ReferenceLineInfo* reference_line_info) {
       ADEBUG << "STOP: obstacle[" << obstacle_id << "]";
 
       // build stop decision
-      const double stop_distance =
+      double stop_distance =
           path_obstacle->MinRadiusStopDistance(vehicle_param);
       const double stop_s = obstacle_sl.start_s() - stop_distance;
       auto stop_point = reference_line.GetReferencePoint(stop_s);
-      const double stop_heading =
+      double stop_heading =
           reference_line.GetReferencePoint(stop_s).heading();
 
       ObjectDecisionType stop;
